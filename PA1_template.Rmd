@@ -7,19 +7,99 @@ output:
 
 
 ## Loading and preprocessing the data
+First of all let's load part the data. This table contains more than 17000 entries, so we will take a look at the first 20:
+```{r data}
+activity_table <- read.csv("activity.csv")
+head(activity_table,20)
 
+```
+Then, let's take a look at the summary of all of the data:
 
+```{r summary}
+summary(activity_table)
 
+```
 ## What is mean total number of steps taken per day?
+To find the total mean of steps taken per day we first have to calculate the sum of all the steps:
+```{r}
+daily_steps <- split(activity_table$steps, activity_table$date)
+Steps <- sapply(daily_steps,sum,na.rm=TRUE)
+Steps
+```
+We then plot the histogram of the steps:
+```{r}
+hist(Steps)
+```
 
-
-
+And,as a final step, we calculate the total mean:
+```{r}
+mean(Steps)
+```
 ## What is the average daily activity pattern?
-
-
+To calculate the average daily activity pattern we start by associating the "steps" column with the "interval" column:
+```{r}
+i <- as.numeric(sapply(split(activity_table$steps, activity_table$interval),mean, na.rm=TRUE))
+head(i,50)
+```
+Then we represent the time series plot based on the average steps taken:
+```{r}
+dim <- unique(activity_table$interval)
+plot(dim, i,type="l", xlab="Interval", ylab="Mean of steps")
+```
 
 ## Imputing missing values
+Up until now we've been ignoring the NA values. We can calculate how many of them we're missing:
+```{r}
+NA_counter <- 0
+for (n in 1:dim(activity_table)[1]) {
+  if (is.na(activity_table$steps[n])) {
+    NA_counter <- NA_counter + 1
+  }
+}
+NA_counter
+```
+To fill these values we are going to replace all the NA's with the mean of their relative 5 minutes interval:
+```{r}
+j <- split(activity_table$steps, activity_table$interval)
+for (m in 1:length(j)) {
+  for (n in 1:length(j[[m]])) {
+    if (is.na(j[[m]][n])) {
+      j[[m]][n] <- i[m]
+    }
+  }
+}
+head(j, 3)
+```
+And then we can graph the result:
+```{r}
+j <- as.numeric(sapply(j,mean))
+plot(dim, j,type="l", xlab="Interval", ylab="Mean of steps")
+```
 
-
+Based on the plots, there doesn't appear to be any differences if we decided to include all the NAs values.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+First of all let's define a list of all the days present in the table:
+```{r}
+days <- weekdays(as.Date(activity_table$date))
+```
+Then let's create a Data Frame containing the steps, the 5 minute interval and the days of the week, and let's take the mean of both of them:
+```{r}
+
+daysofweek_dataframe <- data.frame(activity_table$steps, activity_table$interval, days)
+weekdays <- daysofweek_dataframe[!daysofweek_dataframe$days=="sabato" | !daysofweek_dataframe$days == "domenica",]
+weekend <- daysofweek_dataframe[daysofweek_dataframe$days=="sabato" | daysofweek_dataframe$days == "domenica",]
+
+head(daysofweek_dataframe,5)
+head(weekdays)
+head(weekend)
+
+weekdays_mean <- as.numeric(sapply(split(weekdays$activity_table.steps, weekdays$activity_table.interval),mean, na.rm=TRUE))
+weekend_mean <- as.numeric(sapply(split(weekend$activity_table.steps, weekend$activity_table.interval),mean, na.rm=TRUE))
+```
+We can now plot all the data we got:
+
+```{r, echo=FALSE}
+plot(dim, weekend_mean, type="l", main="Weekend", xlab="Interval", ylab="Mean of steps")
+plot(dim, weekdays_mean, type="l", main="Weekday", xlab="Interval", ylab="Mean of steps")
+```
